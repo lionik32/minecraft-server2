@@ -1,4 +1,4 @@
-const { WebSocketServer } = require('ws');
+const const { WebSocketServer } = require('ws');
 const port = process.env.PORT || 8080;
 const wss = new WebSocketServer({ port });
 
@@ -42,13 +42,6 @@ setInterval(() => {
     players.forEach((p, id) => {
         lista.push({ id, x: p.x, y: p.y, z: p.z, yaw: p.yaw });
     });
-    const msg = JSON.stringify({ type: 'players', players: lista });
-    players.forEach(({ ws }) => {
-        if (ws.readyState === 1) ws.send(msg);
-    });
-}, 50);
-
-console.log(`Servidor corriendo en puerto ${port}`);    });
     const msg = JSON.stringify({ type: 'players', players: lista });
     players.forEach(({ ws }) => {
         if (ws.readyState === 1) ws.send(msg);
