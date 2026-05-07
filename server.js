@@ -14,7 +14,7 @@ function broadcast(senderId, data) {
 
 wss.on('connection', (ws) => {
     const id = nextId++;
-    players.set(id, { ws, x: 0, y: 2, z: 0, yaw: 0 });
+    players.set(id, { ws, x: 0, y: 2, z: 0, yaw: 0, mundo: null });
     ws.send(JSON.stringify({ type: 'id', id }));
     console.log(`Jugador ${id} conectado. Total: ${players.size}`);
 
