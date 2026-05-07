@@ -29,11 +29,12 @@ wss.on('connection', (ws) => {
             }
 
             if (data.type === 'state') {
-                const p = players.get(id);
-                if (p) {
-                    p.x = data.x; p.y = data.y; p.z = data.z;
-                    p.yaw = data.yaw; p.mundo = data.mundo;
-                }
+    const p = players.get(id);
+    if (p) {
+        p.x = data.x; p.y = data.y; p.z = data.z;
+        p.yaw = data.yaw; p.mundo = data.mundo;
+        p.esMulti = data.esMulti;
+    }
             }
 
             if (data.type === 'block_place' || data.type === 'block_break') {
@@ -59,16 +60,17 @@ setInterval(() => {
     players.forEach((receiverData, receiverId) => {
         const filteredList = [];
         players.forEach((playerData, playerId) => {
-            if (playerData.mundo === receiverData.mundo) {
-                filteredList.push({
-                    id: playerId,
-                    x: playerData.x,
-                    y: playerData.y,
-                    z: playerData.z,
-                    yaw: playerData.yaw
-                });
-            }
+            if (players.forEach((playerData, playerId) => {
+    if (playerData.mundo === receiverData.mundo && playerData.esMulti) {
+        filteredList.push({
+            id: playerId,
+            x: playerData.x,
+            y: playerData.y,
+            z: playerData.z,
+            yaw: playerData.yaw
         });
+    }
+});
         const msg = JSON.stringify({ type: 'players', players: filteredList });
         if (receiverData.ws.readyState === 1) {
             receiverData.ws.send(msg);
