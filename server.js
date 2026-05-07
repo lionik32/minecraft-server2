@@ -52,9 +52,19 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('close', () => {
-        players.delete(id);
-        console.log(`Jugador ${id} desconectado. Total: ${players.size}`);
-    });
+    const playerSaliente = players.get(id);
+    players.delete(id);
+    console.log(`Jugador ${id} desconectado. Total: ${players.size}`);
+
+    // Notificar a jugadores del mismo mundo
+    if (playerSaliente && playerSaliente.mundo) {
+        players.forEach(({ ws: ws2, mundo }) => {
+            if (mundo === playerSaliente.mundo && ws2.readyState === 1) {
+                ws2.send(JSON.stringify({ type: 'player_left', id }));
+            }
+        });
+    }
+});
 });
 
 setInterval(() => {
