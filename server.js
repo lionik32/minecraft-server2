@@ -63,12 +63,13 @@ setInterval(() => {
         players.forEach((playerData, playerId) => {
             if (playerData.mundo === receiverData.mundo && playerData.esMulti) {
                 filteredList.push({
-                    id: playerId,
-                    x: playerData.x,
-                    y: playerData.y,
-                    z: playerData.z,
-                    yaw: playerData.yaw
-                });
+    id: playerId,
+    x: playerData.x,
+    y: playerData.y,
+    z: playerData.z,
+    yaw: playerData.yaw,
+    esMulti: playerData.esMulti
+});
             }
         });
         const msg = JSON.stringify({ type: 'players', players: filteredList });
