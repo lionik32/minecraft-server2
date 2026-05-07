@@ -7,7 +7,7 @@ const players = new Map();
 
 wss.on('connection', (ws) => {
     const id = nextId++;
-    players.set(id, { ws, x: 0, y: 2, z: 0, yaw: 0, mundo: null });
+    players.set(id, { ws, x: 0, y: 2, z: 0, yaw: 0, mundo: null, esMulti: false });
     ws.send(JSON.stringify({ type: 'id', id }));
     console.log(`Jugador ${id} conectado. Total: ${players.size}`);
 
@@ -29,19 +29,19 @@ wss.on('connection', (ws) => {
             }
 
             if (data.type === 'state') {
-    const p = players.get(id);
-    if (p) {
-        p.x = data.x; p.y = data.y; p.z = data.z;
-        p.yaw = data.yaw; p.mundo = data.mundo;
-        p.esMulti = data.esMulti;
-    }
+                const p = players.get(id);
+                if (p) {
+                    p.x = data.x; p.y = data.y; p.z = data.z;
+                    p.yaw = data.yaw; p.mundo = data.mundo;
+                    p.esMulti = data.esMulti;
+                }
             }
 
             if (data.type === 'block_place' || data.type === 'block_break') {
                 const sender = players.get(id);
                 const mundo = sender ? sender.mundo : null;
                 players.forEach(({ ws: ws2 }, otherId) => {
-                    if (otherId !== id && ws2.readyState === 1 && players.get(otherId).mundo === mundo) {
+                    if (otherId !== id && ws2.readyState === 1 && players.get(otherId).mundo === mundo && players.get(otherId).esMulti) {
                         ws2.send(JSON.stringify(data));
                     }
                 });
@@ -60,17 +60,16 @@ setInterval(() => {
     players.forEach((receiverData, receiverId) => {
         const filteredList = [];
         players.forEach((playerData, playerId) => {
-            if (players.forEach((playerData, playerId) => {
-    if (playerData.mundo === receiverData.mundo && playerData.esMulti) {
-        filteredList.push({
-            id: playerId,
-            x: playerData.x,
-            y: playerData.y,
-            z: playerData.z,
-            yaw: playerData.yaw
+            if (playerData.mundo === receiverData.mundo && playerData.esMulti) {
+                filteredList.push({
+                    id: playerId,
+                    x: playerData.x,
+                    y: playerData.y,
+                    z: playerData.z,
+                    yaw: playerData.yaw
+                });
+            }
         });
-    }
-});
         const msg = JSON.stringify({ type: 'players', players: filteredList });
         if (receiverData.ws.readyState === 1) {
             receiverData.ws.send(msg);
