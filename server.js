@@ -23,7 +23,7 @@ wss.on('connection', (ws) => {
             const data = JSON.parse(raw);
             if (data.type === 'state') {
                 const p = players.get(id);
-                if (p) { p.x = data.x; p.y = data.y; p.z = data.z; p.yaw = data.yaw; }
+                if (p) { p.x = data.x; p.y = data.y; p.z = data.z; p.yaw = data.yaw; p.mundo = data.mundo; }
             }
             if (data.type === 'block_place' || data.type === 'block_break') {
                 broadcast(id, data);
