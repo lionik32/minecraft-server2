@@ -26,7 +26,12 @@ wss.on('connection', (ws) => {
                 if (p) { p.x = data.x; p.y = data.y; p.z = data.z; p.yaw = data.yaw; p.mundo = data.mundo; }
             }
             if (data.type === 'block_place' || data.type === 'block_break') {
-                broadcast(id, data);
+    const sender = players.get(id);
+    players.forEach(({ ws }, otherId) => {
+        if (otherId !== id && ws.readyState === 1 && players.get(otherId).mundo === sender.mundo) {
+            ws.send(JSON.stringify(data));
+        }
+    });
             }
         } catch (e) {}
     });
