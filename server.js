@@ -4,7 +4,6 @@ const wss = new WebSocketServer({ port });
 
 let nextId = 1;
 const players = new Map();
- 
 
 function broadcast(senderId, data) {
     const msg = JSON.stringify(data);
@@ -17,24 +16,61 @@ wss.on('connection', (ws) => {
     const id = nextId++;
     players.set(id, { ws, x: 0, y: 2, z: 0, yaw: 0, mundo: null });
     ws.send(JSON.stringify({ type: 'id', id }));
-
-// Enviar estado del mundo cuando el cliente avise su mundo
-// (se hace en el primer mensaje de estado)
     console.log(`Jugador ${id} conectado. Total: ${players.size}`);
 
     ws.on('message', (raw) => {
         try {
             const data = JSON.parse(raw);
-            if (data.type === 'state') {
-    const p = players.get(id);
-    if (p) {
-        const mundoAnterior = p.mundo;
-        p.x = data.x; p.y = data.y; p.z = data.z; p.yaw = data.yaw; p.mundo = data.mundo;
 
-        // Primera vez que manda su mundo: enviarle el estado actual
-        
-    }
+            if (data.type === 'state') {
+                const p = players.get(id);
+                if (p) {
+                    p.x = data.x; p.y = data.y; p.z = data.z;
+                    p.yaw = data.yaw; p.mundo = data.mundo;
+                }
             }
+
+            if (data.type === 'block_place' || data.type === 'block_break') {
+                const sender = players.get(id);
+                const mundo = sender ? sender.mundo : null;
+                players.forEach(({ ws: ws2 }, otherId) => {
+                    if (otherId !== id && ws2.readyState === 1 && players.get(otherId).mundo === mundo) {
+                        ws2.send(JSON.stringify(data));
+                    }
+                });
+            }
+
+        } catch (e) {}
+    });
+
+    ws.on('close', () => {
+        players.delete(id);
+        console.log(`Jugador ${id} desconectado. Total: ${players.size}`);
+    });
+});
+
+setInterval(() => {
+    players.forEach((receiverData, receiverId) => {
+        const filteredList = [];
+        players.forEach((playerData, playerId) => {
+            if (playerData.mundo === receiverData.mundo) {
+                filteredList.push({
+                    id: playerId,
+                    x: playerData.x,
+                    y: playerData.y,
+                    z: playerData.z,
+                    yaw: playerData.yaw
+                });
+            }
+        });
+        const msg = JSON.stringify({ type: 'players', players: filteredList });
+        if (receiverData.ws.readyState === 1) {
+            receiverData.ws.send(msg);
+        }
+    });
+}, 50);
+
+console.log(`Servidor corriendo en puerto ${port}`);            }
             
 
     players.forEach(({ ws }, otherId) => {
