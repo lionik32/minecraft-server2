@@ -5,13 +5,6 @@ const wss = new WebSocketServer({ port });
 let nextId = 1;
 const players = new Map();
 
-function broadcast(senderId, data) {
-    const msg = JSON.stringify(data);
-    players.forEach(({ ws }, id) => {
-        if (id !== senderId && ws.readyState === 1) ws.send(msg);
-    });
-}
-
 wss.on('connection', (ws) => {
     const id = nextId++;
     players.set(id, { ws, x: 0, y: 2, z: 0, yaw: 0, mundo: null });
@@ -21,6 +14,19 @@ wss.on('connection', (ws) => {
     ws.on('message', (raw) => {
         try {
             const data = JSON.parse(raw);
+
+            if (data.type === 'get_salas') {
+                const salas = {};
+                players.forEach((p) => {
+                    if (p.mundo) {
+                        if (!salas[p.mundo]) salas[p.mundo] = 0;
+                        salas[p.mundo]++;
+                    }
+                });
+                const lista = Object.entries(salas).map(([mundo, jugadores]) => ({ mundo, jugadores }));
+                ws.send(JSON.stringify({ type: 'salas', salas: lista }));
+                return;
+            }
 
             if (data.type === 'state') {
                 const p = players.get(id);
