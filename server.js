@@ -38,14 +38,33 @@ wss.on('connection', (ws) => {
 });
 
 setInterval(() => {
-    const lista = [];
-    players.forEach((p, id) => {
-        lista.push({ id, x: p.x, y: p.y, z: p.z, yaw: p.yaw });
-    });
-    const msg = JSON.stringify({ type: 'players', players: lista });
-    players.forEach(({ ws }) => {
-        if (ws.readyState === 1) ws.send(msg);
+    // For each player (the receiver)
+    players.forEach((receiverData, receiverId) => {
+        const filteredList = [];
+
+        // Check all players to see who is in the same world as the receiver
+        players.forEach((playerData, playerId) => {
+            if (playerData.mundo === receiverData.mundo) {
+                filteredList.push({
+                    id: playerId,
+                    x: playerData.x,
+                    y: playerData.y,
+                    z: playerData.z,
+                    yaw: playerData.yaw
+                });
+            }
+        });
+
+        const msg = JSON.stringify({ 
+            type: 'players', 
+            players: filteredList 
+        });
+
+        if (receiverData.ws.readyState === 1) {
+            receiverData.ws.send(msg);
+        }
     });
 }, 50);
+
 
 console.log(`Servidor corriendo en puerto ${port}`);
