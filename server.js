@@ -4,7 +4,7 @@ const wss = new WebSocketServer({ port });
 
 let nextId = 1;
 const players = new Map();
-const worldBlocks = { plano: [], normal: [] };
+ 
 
 function broadcast(senderId, data) {
     const msg = JSON.stringify(data);
@@ -32,24 +32,10 @@ wss.on('connection', (ws) => {
         p.x = data.x; p.y = data.y; p.z = data.z; p.yaw = data.yaw; p.mundo = data.mundo;
 
         // Primera vez que manda su mundo: enviarle el estado actual
-        if (!mundoAnterior && data.mundo && worldBlocks[data.mundo]) {
-            worldBlocks[data.mundo].forEach(bloque => {
-                ws.send(JSON.stringify({ type: 'block_place', ...bloque }));
-            });
-        }
+        
     }
             }
-            if (data.type === 'block_place' || data.type === 'block_break') {
-    const sender = players.get(id);
-    const mundo = sender.mundo || 'plano';
-
-    if (data.type === 'block_place') {
-        worldBlocks[mundo].push({ x: data.x, y: data.y, z: data.z, mat: data.mat });
-    } else if (data.type === 'block_break') {
-        worldBlocks[mundo] = worldBlocks[mundo].filter(b =>
-            !(Math.abs(b.x - data.x) < 0.1 && Math.abs(b.y - data.y) < 0.1 && Math.abs(b.z - data.z) < 0.1)
-        );
-    }
+            
 
     players.forEach(({ ws }, otherId) => {
         if (otherId !== id && ws.readyState === 1 && players.get(otherId).mundo === mundo) {
