@@ -38,13 +38,14 @@ wss.on('connection', (ws) => {
             }
 
             if (data.type === 'block_place' || data.type === 'block_break') {
-                const sender = players.get(id);
-                const mundo = sender ? sender.mundo : null;
-                players.forEach(({ ws: ws2 }, otherId) => {
-                    if (otherId !== id && ws2.readyState === 1 && players.get(otherId).mundo === mundo && players.get(otherId).esMulti) {
-                        ws2.send(JSON.stringify(data));
-                    }
-                });
+    const sender = players.get(id);
+    if (!sender || !sender.esMulti) return;
+    const mundo = sender.mundo;
+    players.forEach(({ ws: ws2 }, otherId) => {
+        if (otherId !== id && ws2.readyState === 1 && players.get(otherId).mundo === mundo && players.get(otherId).esMulti) {
+            ws2.send(JSON.stringify(data));
+        }
+    });
             }
 
         } catch (e) {}
