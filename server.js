@@ -1,4 +1,4 @@
-const const { WebSocketServer } = require('ws');
+const { WebSocketServer } = require('ws');
 const port = process.env.PORT || 8080;
 const wss = new WebSocketServer({ port });
 
