@@ -3,115 +3,97 @@ const port = process.env.PORT || 8080;
 const wss = new WebSocketServer({ port });
 
 let nextId = 1;
-let nextSalaId = 1;
 const players = new Map();
-const worldBlocks = {};
+const salas = new Map();
 
 wss.on('connection', (ws) => {
     const id = nextId++;
-    const salaId = nextSalaId++;
-    players.set(id, { ws, x: 0, y: 2, z: 0, yaw: 0, mundo: null, esMulti: false, salaId });
+    const salaId = id;
+    players.set(id, { ws, x: 0, y: 2, z: 0, yaw: 0, salaId, mundo: null });
+    salas.set(salaId, { mundo: null, bloques: [] });
     ws.send(JSON.stringify({ type: 'id', id, salaId }));
     console.log(`Jugador ${id} conectado. Total: ${players.size}`);
 
     ws.on('message', (raw) => {
         try {
             const data = JSON.parse(raw);
+            const player = players.get(id);
+            if (!player) return;
 
-            if (data.type === 'get_salas') {
-                const salas = [];
-                players.forEach((p) => {
-                    if (p.mundo && !salas.find(s => s.salaId === p.salaId)) {
-                        let jugadores = 0;
-                        players.forEach(p2 => { if (p2.salaId === p.salaId) jugadores++; });
-                        salas.push({ mundo: p.mundo, jugadores, salaId: p.salaId });
-                    }
-                });
-                ws.send(JSON.stringify({ type: 'salas', salas }));
-                return;
+            if (data.type === 'state') {
+                player.x = data.x; player.y = data.y;
+                player.z = data.z; player.yaw = data.yaw;
+                if (data.mundo) {
+                    player.mundo = data.mundo;
+                    const sala = salas.get(player.salaId);
+                    if (sala) sala.mundo = data.mundo;
+                }
             }
 
             if (data.type === 'join_sala') {
-                const p = players.get(id);
-                if (p && data.salaId) {
-                    p.salaId = data.salaId;
-                    p.esMulti = true;
-                    // Mandar bloques existentes de esa sala
-                    const bloques = worldBlocks[data.salaId] || [];
-                    ws.send(JSON.stringify({ type: 'world_state', bloques }));
-                }
-                return;
+                player.salaId = data.salaId;
+                const sala = salas.get(data.salaId);
+                if (sala) ws.send(JSON.stringify({ type: 'world_state', bloques: sala.bloques }));
             }
 
-            if (data.type === 'state') {
-                const p = players.get(id);
-                if (p) {
-                    p.x = data.x; p.y = data.y; p.z = data.z;
-                    p.yaw = data.yaw; p.mundo = data.mundo;
-                    p.esMulti = data.esMulti;
-                }
+            if (data.type === 'get_salas') {
+                const lista = [];
+                salas.forEach((sala, sid) => {
+                    if (!sala.mundo) return;
+                    let count = 0;
+                    players.forEach(p => { if (p.salaId === sid) count++; });
+                    lista.push({ salaId: sid, mundo: sala.mundo, jugadores: count });
+                });
+                ws.send(JSON.stringify({ type: 'salas', salas: lista }));
             }
 
             if (data.type === 'block_place' || data.type === 'block_break') {
-                const sender = players.get(id);
-                if (!sender) return;
-                const salaId = sender.salaId;
-
-                if (!worldBlocks[salaId]) worldBlocks[salaId] = [];
-                if (data.type === 'block_place') {
-                    worldBlocks[salaId].push({ x: data.x, y: data.y, z: data.z, mat: data.mat });
-                } else {
-                    worldBlocks[salaId] = worldBlocks[salaId].filter(b =>
-                        !(Math.abs(b.x - data.x) < 0.1 && Math.abs(b.y - data.y) < 0.1 && Math.abs(b.z - data.z) < 0.1)
-                    );
+                const sala = salas.get(player.salaId);
+                if (sala) {
+                    if (data.type === 'block_place') {
+                        sala.bloques.push({ x: data.x, y: data.y, z: data.z, mat: data.mat });
+                    } else {
+                        sala.bloques = sala.bloques.filter(b =>
+                            !(Math.abs(b.x-data.x)<0.1 && Math.abs(b.y-data.y)<0.1 && Math.abs(b.z-data.z)<0.1)
+                        );
+                    }
                 }
-
-                if (sender.esMulti) {
-                    players.forEach(({ ws: ws2 }, otherId) => {
+                players.forEach(({ ws: ws2 }, otherId) => {
+                    if (otherId !== id && ws2.readyState === 1) {
                         const other = players.get(otherId);
-                        if (otherId !== id && ws2.readyState === 1 && other.salaId === salaId && other.esMulti) {
-                            ws2.send(JSON.stringify(data));
-                        }
-                    });
-                }
+                        if (other && other.salaId === player.salaId) ws2.send(JSON.stringify(data));
+                    }
+                });
             }
-
         } catch (e) {}
     });
 
     ws.on('close', () => {
-        const playerSaliente = players.get(id);
+        const player = players.get(id);
         players.delete(id);
-        console.log(`Jugador ${id} desconectado. Total: ${players.size}`);
-        if (playerSaliente && playerSaliente.mundo) {
+        salas.delete(id);
+        if (player) {
             players.forEach(({ ws: ws2 }, otherId) => {
                 const other = players.get(otherId);
-                if (other && other.salaId === playerSaliente.salaId && ws2.readyState === 1) {
+                if (other && other.salaId === player.salaId && ws2.readyState === 1) {
                     ws2.send(JSON.stringify({ type: 'player_left', id }));
                 }
             });
         }
+        console.log(`Jugador ${id} desconectado. Total: ${players.size}`);
     });
 });
 
 setInterval(() => {
-    players.forEach((receiverData, receiverId) => {
-        const filteredList = [];
-        players.forEach((playerData, playerId) => {
-            if (playerData.salaId === receiverData.salaId && playerData.esMulti) {
-                filteredList.push({
-                    id: playerId,
-                    x: playerData.x,
-                    y: playerData.y,
-                    z: playerData.z,
-                    yaw: playerData.yaw,
-                    esMulti: playerData.esMulti
-                });
+    players.forEach((receiver, receiverId) => {
+        const lista = [];
+        players.forEach((sender, senderId) => {
+            if (senderId !== receiverId && sender.salaId === receiver.salaId && sender.mundo) {
+                lista.push({ id: senderId, x: sender.x, y: sender.y, z: sender.z, yaw: sender.yaw });
             }
         });
-        const msg = JSON.stringify({ type: 'players', players: filteredList });
-        if (receiverData.ws.readyState === 1) {
-            receiverData.ws.send(msg);
+        if (receiver.ws.readyState === 1) {
+            receiver.ws.send(JSON.stringify({ type: 'players', players: lista }));
         }
     });
 }, 50);
