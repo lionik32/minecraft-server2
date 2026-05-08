@@ -9,9 +9,8 @@ const worldBlocks = {};
 
 wss.on('connection', (ws) => {
     const id = nextId++;
-    // Asignar salaId único a este jugador (su propio mundo)
     const salaId = nextSalaId++;
-    players.set(id, { ws, x: 0, y: 2, z: 0, yaw: 0, mundo: null, esMulti: false, salaId, mundoRecibido: false });
+    players.set(id, { ws, x: 0, y: 2, z: 0, yaw: 0, mundo: null, esMulti: false, salaId, mundoEnviado: false });
     ws.send(JSON.stringify({ type: 'id', id, salaId }));
     console.log(`Jugador ${id} conectado. Total: ${players.size}`);
 
@@ -22,36 +21,39 @@ wss.on('connection', (ws) => {
             if (data.type === 'get_salas') {
                 const salas = [];
                 players.forEach((p) => {
-                    if (p.mundo) {
-                        // Contar cuántos jugadores están en esta sala
+                    if (p.mundo && !salas.find(s => s.salaId === p.salaId)) {
                         let jugadores = 0;
                         players.forEach(p2 => { if (p2.salaId === p.salaId) jugadores++; });
-                        // Solo mostrar una vez por salaId
-                        if (!salas.find(s => s.salaId === p.salaId)) {
-                            salas.push({ mundo: p.mundo, jugadores, salaId: p.salaId });
-                        }
+                        salas.push({ mundo: p.mundo, jugadores, salaId: p.salaId });
                     }
                 });
                 ws.send(JSON.stringify({ type: 'salas', salas }));
                 return;
             }
 
-            if (data.type === 'state') {
-    const p = players.get(id);
-    if (p) {
-        p.x = data.x; p.y = data.y; p.z = data.z;
-        p.yaw = data.yaw; p.mundo = data.mundo;
-        p.esMulti = data.esMulti;
-
-        if (data.salaId && data.salaId !== p.salaId) {
-    p.salaId = data.salaId;
-    if (data.esMulti && !p.mundoRecibido) {
-        p.mundoRecibido = true;
-        const bloques = worldBlocks[data.salaId] || [];
-        ws.send(JSON.stringify({ type: 'world_state', bloques }));
-    }
+            if (data.type === 'join_sala') {
+                const p = players.get(id);
+                if (p && data.salaId && data.salaId !== p.salaId) {
+                    p.salaId = data.salaId;
+                    p.mundoEnviado = false;
+                }
+                return;
             }
-    }
+
+            if (data.type === 'state') {
+                const p = players.get(id);
+                if (p) {
+                    p.x = data.x; p.y = data.y; p.z = data.z;
+                    p.yaw = data.yaw; p.mundo = data.mundo;
+                    const eraMulti = p.esMulti;
+                    p.esMulti = data.esMulti;
+
+                    if (data.esMulti && !p.mundoEnviado) {
+                        p.mundoEnviado = true;
+                        const bloques = worldBlocks[p.salaId] || [];
+                        ws.send(JSON.stringify({ type: 'world_state', bloques }));
+                    }
+                }
             }
 
             if (data.type === 'block_place' || data.type === 'block_break') {
