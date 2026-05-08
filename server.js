@@ -47,13 +47,13 @@ wss.on('connection', (ws) => {
                     // Si viene con salaId (se unió a sala de otro), usarlo
                     if (data.salaId) p.salaId = data.salaId;
 
-                    // Primera vez que entra en modo multi: mandar bloques existentes
-                    if (!mundoAnterior && data.esMulti && data.mundo) {
-                        const bloques = worldBlocks[p.salaId] || [];
-                        if (bloques.length > 0) {
-                            ws.send(JSON.stringify({ type: 'world_state', bloques }));
-                        }
-                    }
+                    // Cuando entra en modo multi por primera vez en esta sala
+if (data.esMulti && data.salaId && data.salaId !== salaIdAnterior) {
+    const bloques = worldBlocks[data.salaId] || [];
+    if (bloques.length > 0) {
+        ws.send(JSON.stringify({ type: 'world_state', bloques }));
+    }
+}
                 }
             }
 
