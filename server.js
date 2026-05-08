@@ -37,24 +37,20 @@ wss.on('connection', (ws) => {
             }
 
             if (data.type === 'state') {
-                const p = players.get(id);
-                if (p) {
-                    const mundoAnterior = p.mundo;
-                    const salaIdAnterior = p.salaId;
-                    p.x = data.x; p.y = data.y; p.z = data.z;
-                    p.yaw = data.yaw; p.mundo = data.mundo;
-                    p.esMulti = data.esMulti;
-                    // Si viene con salaId (se unió a sala de otro), usarlo
-                    if (data.salaId) p.salaId = data.salaId;
+    const p = players.get(id);
+    if (p) {
+        p.x = data.x; p.y = data.y; p.z = data.z;
+        p.yaw = data.yaw; p.mundo = data.mundo;
+        p.esMulti = data.esMulti;
 
-                    // Cuando entra en modo multi por primera vez en esta sala
-if (data.esMulti && data.salaId && data.salaId !== salaIdAnterior) {
-    const bloques = worldBlocks[data.salaId] || [];
-    if (bloques.length > 0) {
-        ws.send(JSON.stringify({ type: 'world_state', bloques }));
+        if (data.salaId && data.salaId !== p.salaId) {
+            p.salaId = data.salaId;
+            if (data.esMulti) {
+                const bloques = worldBlocks[data.salaId] || [];
+                ws.send(JSON.stringify({ type: 'world_state', bloques }));
+            }
+        }
     }
-}
-                }
             }
 
             if (data.type === 'block_place' || data.type === 'block_break') {
