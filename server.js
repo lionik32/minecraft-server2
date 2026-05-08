@@ -24,7 +24,6 @@ wss.on('connection', (ws) => {
                 player.z = data.z; player.yaw = data.yaw;
                 player.esMulti = data.esMulti;
                 if (data.mundo) player.mundo = data.mundo;
-
                 if (data.salaId && data.salaId !== player.salaId) {
                     player.salaId = data.salaId;
                     if (data.esMulti) {
@@ -39,7 +38,7 @@ wss.on('connection', (ws) => {
             if (data.type === 'get_salas') {
                 const lista = [];
                 const vistas = new Set();
-                players.forEach((p, pid) => {
+                players.forEach((p) => {
                     if (!p.mundo || vistas.has(p.salaId)) return;
                     vistas.add(p.salaId);
                     let count = 0;
@@ -49,20 +48,23 @@ wss.on('connection', (ws) => {
                 ws.send(JSON.stringify({ type: 'salas', salas: lista }));
             }
 
-            if (data.type === 'block_place') {
-    worldBlocks[salaId].push({ x: data.x, y: data.y, z: data.z, mat: data.mat, type: 'place' });
-} else {
-    // Quitar si había un bloque puesto ahí
-    worldBlocks[salaId] = worldBlocks[salaId].filter(b =>
-        !(Math.abs(b.x-data.x)<0.1 && Math.abs(b.y-data.y)<0.1 && Math.abs(b.z-data.z)<0.1)
-    );
-    // Guardar el bloque roto del terreno
-    worldBlocks[salaId].push({ x: data.x, y: data.y, z: data.z, type: 'break' });
-            }
+            if (data.type === 'block_place' || data.type === 'block_break') {
+                const sid = player.salaId;
+                if (!worldBlocks[sid]) worldBlocks[sid] = [];
+
+                if (data.type === 'block_place') {
+                    worldBlocks[sid].push({ x: data.x, y: data.y, z: data.z, mat: data.mat, type: 'place' });
+                } else {
+                    worldBlocks[sid] = worldBlocks[sid].filter(b =>
+                        !(Math.abs(b.x-data.x)<0.1 && Math.abs(b.y-data.y)<0.1 && Math.abs(b.z-data.z)<0.1)
+                    );
+                    worldBlocks[sid].push({ x: data.x, y: data.y, z: data.z, type: 'break' });
+                }
+
                 if (player.esMulti) {
                     players.forEach(({ ws: ws2 }, otherId) => {
                         const other = players.get(otherId);
-                        if (otherId !== id && ws2.readyState === 1 && other.salaId === salaId && other.esMulti) {
+                        if (otherId !== id && ws2.readyState === 1 && other.salaId === sid && other.esMulti) {
                             ws2.send(JSON.stringify(data));
                         }
                     });
