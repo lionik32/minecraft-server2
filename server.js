@@ -31,9 +31,17 @@ wss.on('connection', (ws) => {
             }
 
             if (data.type === 'join_sala') {
+                const salaAnterior = player.salaId;
                 player.salaId = data.salaId;
                 const sala = salas.get(data.salaId);
                 if (sala) ws.send(JSON.stringify({ type: 'world_state', bloques: sala.bloques }));
+                // Notificar al dueño de la sala que alguien se unió
+                players.forEach(({ ws: ws2 }, otherId) => {
+                    const other = players.get(otherId);
+                    if (otherId !== id && ws2.readyState === 1 && other.salaId === data.salaId) {
+                        ws2.send(JSON.stringify({ type: 'player_joined' }));
+                    }
+                });
             }
 
             if (data.type === 'get_salas') {
