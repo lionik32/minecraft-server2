@@ -27,8 +27,13 @@ wss.on('connection', (ws) => {
                 if (data.salaId && data.salaId !== player.salaId) {
                     player.salaId = data.salaId;
                     if (data.esMulti) {
-                        const bloques = worldBlocks[data.salaId] || [];
-                        ws.send(JSON.stringify({ type: 'world_state', bloques }));
+                        // Notificar al dueño de la sala
+                        players.forEach(({ ws: ws2 }, otherId) => {
+                            const other = players.get(otherId);
+                            if (otherId !== id && ws2.readyState === 1 && other.salaId === data.salaId) {
+                                ws2.send(JSON.stringify({ type: 'player_joined' }));
+                            }
+                        });
                     }
                 } else if (data.salaId) {
                     player.salaId = data.salaId;
@@ -48,10 +53,18 @@ wss.on('connection', (ws) => {
                 ws.send(JSON.stringify({ type: 'salas', salas: lista }));
             }
 
+            if (data.type === 'mundo_completo') {
+                players.forEach(({ ws: ws2 }, otherId) => {
+                    const other = players.get(otherId);
+                    if (otherId !== id && ws2.readyState === 1 && other.salaId === player.salaId && other.esMulti) {
+                        ws2.send(JSON.stringify({ type: 'mundo_completo', rotos: data.rotos, manuales: data.manuales }));
+                    }
+                });
+            }
+
             if (data.type === 'block_place' || data.type === 'block_break') {
                 const sid = player.salaId;
                 if (!worldBlocks[sid]) worldBlocks[sid] = [];
-
                 if (data.type === 'block_place') {
                     worldBlocks[sid].push({ x: data.x, y: data.y, z: data.z, mat: data.mat, type: 'place' });
                 } else {
@@ -60,7 +73,6 @@ wss.on('connection', (ws) => {
                     );
                     worldBlocks[sid].push({ x: data.x, y: data.y, z: data.z, type: 'break' });
                 }
-
                 if (player.esMulti) {
                     players.forEach(({ ws: ws2 }, otherId) => {
                         const other = players.get(otherId);
