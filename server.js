@@ -24,7 +24,16 @@ wss.on('connection', (ws) => {
                 player.z = data.z; player.yaw = data.yaw;
                 player.esMulti = data.esMulti;
                 if (data.mundo) player.mundo = data.mundo;
-                if (data.salaId) player.salaId = data.salaId;
+
+                if (data.salaId && data.salaId !== player.salaId) {
+                    player.salaId = data.salaId;
+                    if (data.esMulti) {
+                        const bloques = worldBlocks[data.salaId] || [];
+                        ws.send(JSON.stringify({ type: 'world_state', bloques }));
+                    }
+                } else if (data.salaId) {
+                    player.salaId = data.salaId;
+                }
             }
 
             if (data.type === 'get_salas') {
