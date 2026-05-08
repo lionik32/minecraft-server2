@@ -49,16 +49,16 @@ wss.on('connection', (ws) => {
                 ws.send(JSON.stringify({ type: 'salas', salas: lista }));
             }
 
-            if (data.type === 'block_place' || data.type === 'block_break') {
-                const salaId = player.salaId;
-                if (!worldBlocks[salaId]) worldBlocks[salaId] = [];
-                if (data.type === 'block_place') {
-                    worldBlocks[salaId].push({ x: data.x, y: data.y, z: data.z, mat: data.mat });
-                } else {
-                    worldBlocks[salaId] = worldBlocks[salaId].filter(b =>
-                        !(Math.abs(b.x-data.x)<0.1 && Math.abs(b.y-data.y)<0.1 && Math.abs(b.z-data.z)<0.1)
-                    );
-                }
+            if (data.type === 'block_place') {
+    worldBlocks[salaId].push({ x: data.x, y: data.y, z: data.z, mat: data.mat, type: 'place' });
+} else {
+    // Quitar si había un bloque puesto ahí
+    worldBlocks[salaId] = worldBlocks[salaId].filter(b =>
+        !(Math.abs(b.x-data.x)<0.1 && Math.abs(b.y-data.y)<0.1 && Math.abs(b.z-data.z)<0.1)
+    );
+    // Guardar el bloque roto del terreno
+    worldBlocks[salaId].push({ x: data.x, y: data.y, z: data.z, type: 'break' });
+            }
                 if (player.esMulti) {
                     players.forEach(({ ws: ws2 }, otherId) => {
                         const other = players.get(otherId);
