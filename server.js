@@ -91,10 +91,15 @@ wss.on('connection', (ws) => {
         players.delete(id);
         console.log(`Jugador ${id} desconectado. Total: ${players.size}`);
         if (player) {
+            const esDueno = player.salaId === id;
             players.forEach(({ ws: ws2 }, otherId) => {
                 const other = players.get(otherId);
                 if (other && other.salaId === player.salaId && ws2.readyState === 1) {
-                    ws2.send(JSON.stringify({ type: 'player_left', id }));
+                    if (esDueno) {
+                        ws2.send(JSON.stringify({ type: 'sala_cerrada' }));
+                    } else {
+                        ws2.send(JSON.stringify({ type: 'player_left', id }));
+                    }
                 }
             });
         }
