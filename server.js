@@ -11,7 +11,7 @@ wss.on('connection', (ws) => {
     const id = nextId++;
     // Asignar salaId único a este jugador (su propio mundo)
     const salaId = nextSalaId++;
-    players.set(id, { ws, x: 0, y: 2, z: 0, yaw: 0, mundo: null, esMulti: false, salaId });
+    players.set(id, { ws, x: 0, y: 2, z: 0, yaw: 0, mundo: null, esMulti: false, salaId, mundoRecibido: false });
     ws.send(JSON.stringify({ type: 'id', id, salaId }));
     console.log(`Jugador ${id} conectado. Total: ${players.size}`);
 
