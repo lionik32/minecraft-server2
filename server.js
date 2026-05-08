@@ -10,7 +10,7 @@ const worldBlocks = {};
 wss.on('connection', (ws) => {
     const id = nextId++;
     const salaId = nextSalaId++;
-    players.set(id, { ws, x: 0, y: 2, z: 0, yaw: 0, mundo: null, esMulti: false, salaId, mundoEnviado: false });
+    players.set(id, { ws, x: 0, y: 2, z: 0, yaw: 0, mundo: null, esMulti: false, salaId });
     ws.send(JSON.stringify({ type: 'id', id, salaId }));
     console.log(`Jugador ${id} conectado. Total: ${players.size}`);
 
@@ -33,9 +33,12 @@ wss.on('connection', (ws) => {
 
             if (data.type === 'join_sala') {
                 const p = players.get(id);
-                if (p && data.salaId && data.salaId !== p.salaId) {
+                if (p && data.salaId) {
                     p.salaId = data.salaId;
-                    p.mundoEnviado = false;
+                    p.esMulti = true;
+                    // Mandar bloques existentes de esa sala
+                    const bloques = worldBlocks[data.salaId] || [];
+                    ws.send(JSON.stringify({ type: 'world_state', bloques }));
                 }
                 return;
             }
@@ -45,14 +48,7 @@ wss.on('connection', (ws) => {
                 if (p) {
                     p.x = data.x; p.y = data.y; p.z = data.z;
                     p.yaw = data.yaw; p.mundo = data.mundo;
-                    const eraMulti = p.esMulti;
                     p.esMulti = data.esMulti;
-
-                    if (data.esMulti && !p.mundoEnviado) {
-                        p.mundoEnviado = true;
-                        const bloques = worldBlocks[p.salaId] || [];
-                        ws.send(JSON.stringify({ type: 'world_state', bloques }));
-                    }
                 }
             }
 
