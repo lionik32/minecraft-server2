@@ -48,24 +48,27 @@ wss.on('connection', (ws) => {
             }
 
             if (data.type === 'block_place' || data.type === 'block_break') {
-                const sender = players.get(id);
-                if (!sender || !sender.esMulti) return;
-                const mundo = sender.mundo;
+    const sender = players.get(id);
+    if (!sender) return;
+    const mundo = sender.mundo;
 
-                if (!worldBlocks[mundo]) worldBlocks[mundo] = [];
-                if (data.type === 'block_place') {
-                    worldBlocks[mundo].push({ x: data.x, y: data.y, z: data.z, mat: data.mat });
-                } else {
-                    worldBlocks[mundo] = worldBlocks[mundo].filter(b =>
-                        !(Math.abs(b.x - data.x) < 0.1 && Math.abs(b.y - data.y) < 0.1 && Math.abs(b.z - data.z) < 0.1)
-                    );
-                }
+    if (!worldBlocks[mundo]) worldBlocks[mundo] = [];
+    if (data.type === 'block_place') {
+        worldBlocks[mundo].push({ x: data.x, y: data.y, z: data.z, mat: data.mat });
+    } else {
+        worldBlocks[mundo] = worldBlocks[mundo].filter(b =>
+            !(Math.abs(b.x - data.x) < 0.1 && Math.abs(b.y - data.y) < 0.1 && Math.abs(b.z - data.z) < 0.1)
+        );
+    }
 
-                players.forEach(({ ws: ws2 }, otherId) => {
-                    if (otherId !== id && ws2.readyState === 1 && players.get(otherId).mundo === mundo && players.get(otherId).esMulti) {
-                        ws2.send(JSON.stringify(data));
-                    }
-                });
+    // Solo retransmitir a jugadores multi
+    if (sender.esMulti) {
+        players.forEach(({ ws: ws2 }, otherId) => {
+            if (otherId !== id && ws2.readyState === 1 && players.get(otherId).mundo === mundo && players.get(otherId).esMulti) {
+                ws2.send(JSON.stringify(data));
+            }
+        });
+    }
             }
 
         } catch (e) {}
