@@ -49,7 +49,7 @@ wss.on('connection', (ws) => {
 
             if (data.type === 'block_place' || data.type === 'block_break') {
     const sender = players.get(id);
-    if (!sender) return;
+    if (!sender || !sender.esMulti) return;
     const mundo = sender.mundo;
 
     if (!worldBlocks[mundo]) worldBlocks[mundo] = [];
@@ -61,14 +61,11 @@ wss.on('connection', (ws) => {
         );
     }
 
-    // Solo retransmitir a jugadores multi
-    if (sender.esMulti) {
-        players.forEach(({ ws: ws2 }, otherId) => {
-            if (otherId !== id && ws2.readyState === 1 && players.get(otherId).mundo === mundo && players.get(otherId).esMulti) {
-                ws2.send(JSON.stringify(data));
-            }
-        });
-    }
+    players.forEach(({ ws: ws2 }, otherId) => {
+        if (otherId !== id && ws2.readyState === 1 && players.get(otherId).mundo === mundo && players.get(otherId).esMulti) {
+            ws2.send(JSON.stringify(data));
+        }
+    });
             }
 
         } catch (e) {}
