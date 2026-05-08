@@ -44,12 +44,13 @@ wss.on('connection', (ws) => {
         p.esMulti = data.esMulti;
 
         if (data.salaId && data.salaId !== p.salaId) {
-            p.salaId = data.salaId;
-            if (data.esMulti) {
-                const bloques = worldBlocks[data.salaId] || [];
-                ws.send(JSON.stringify({ type: 'world_state', bloques }));
+    p.salaId = data.salaId;
+    if (data.esMulti && !p.mundoRecibido) {
+        p.mundoRecibido = true;
+        const bloques = worldBlocks[data.salaId] || [];
+        ws.send(JSON.stringify({ type: 'world_state', bloques }));
+    }
             }
-        }
     }
             }
 
