@@ -20,10 +20,11 @@ wss.on('connection', (ws) => {
             if (!player) return;
 
             if (data.type === 'state') {
-                player.x = data.x; player.y = data.y;
-                player.z = data.z; player.yaw = data.yaw;
-                player.esMulti = data.esMulti;
-                if (data.mundo) player.mundo = data.mundo;
+    player.x = data.x; player.y = data.y;
+    player.z = data.z; player.yaw = data.yaw;
+    player.esMulti = data.esMulti;
+    if (data.mundo) player.mundo = data.mundo;
+    if (data.nombre) player.nombre = data.nombre;
                 if (data.salaId && data.salaId !== player.salaId) {
                     player.salaId = data.salaId;
                     if (data.esMulti) {
@@ -48,7 +49,7 @@ wss.on('connection', (ws) => {
                     vistas.add(p.salaId);
                     let count = 0;
                     players.forEach(p2 => { if (p2.salaId === p.salaId) count++; });
-                    lista.push({ salaId: p.salaId, mundo: p.mundo, jugadores: count });
+                    lista.push({ salaId: p.salaId, mundo: p.mundo, nombre: p.nombre || p.mundo, jugadores: count });
                 });
                 ws.send(JSON.stringify({ type: 'salas', salas: lista }));
             }
