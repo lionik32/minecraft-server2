@@ -3,12 +3,12 @@ const port = process.env.PORT || 8080;
 const wss = new WebSocketServer({ port });
 
 let nextId = 1;
-const players = new Map();          // id -> { ws, salaId, x, y, z, yaw, mundo, nombre }
-const salas = new Map();            // salaId -> { eventos: [], duenoId, posiciones: Map }
+const players = new Map();          // id -> { ws, salaId, x, y, z, yaw, mundo, nombre, esDueno }
+const salas = new Map();            // salaId -> { eventos: [], duenoId, posiciones: Map, mundo, nombre }
 
 wss.on('connection', (ws) => {
     const id = nextId++;
-    players.set(id, { ws, salaId: null, x: 0, y: 2, z: 0, yaw: 0, mundo: null, nombre: null });
+    players.set(id, { ws, salaId: null, x: 0, y: 2, z: 0, yaw: 0, mundo: null, nombre: null, esDueno: false });
     ws.send(JSON.stringify({ type: 'id', id }));
     console.log(`Jugador ${id} conectado. Total: ${players.size}`);
 
@@ -18,31 +18,64 @@ wss.on('connection', (ws) => {
             const player = players.get(id);
             if (!player) return;
 
-            // Unirse a una sala
+            // Registrar un mundo (solitario) para que aparezca en la lista de salas
+            if (data.type === 'register_world') {
+                const salaId = data.salaId;
+                const mundo = data.mundo;
+                const nombre = data.nombre;
+                if (!salas.has(salaId)) {
+                    salas.set(salaId, {
+                        eventos: [],
+                        duenoId: id,
+                        posiciones: new Map(),
+                        mundo: mundo,
+                        nombre: nombre
+                    });
+                    player.salaId = salaId;
+                    player.mundo = mundo;
+                    player.nombre = nombre;
+                    player.esDueno = true;
+                    console.log(`Mundo ${salaId} registrado por ${id} (${nombre})`);
+                }
+                return;
+            }
+
+            // Unirse a una sala (modo multijugador normal)
             if (data.type === 'join') {
                 const salaId = data.salaId;
                 const mundo = data.mundo;
                 const nombre = data.nombre;
 
                 if (!salas.has(salaId)) {
+                    // Crear nueva sala
                     salas.set(salaId, {
                         eventos: [],
                         duenoId: id,
-                        posiciones: new Map()
+                        posiciones: new Map(),
+                        mundo: mundo,
+                        nombre: nombre
                     });
                     player.salaId = salaId;
                     player.mundo = mundo;
                     player.nombre = nombre;
+                    player.esDueno = true;
                     salas.get(salaId).posiciones.set(id, { x: player.x, y: player.y, z: player.z, yaw: player.yaw });
                     ws.send(JSON.stringify({ type: 'joined', salaId, eventos: [] }));
                     console.log(`Sala ${salaId} creada por ${id} (${nombre})`);
                 } else {
+                    // Notificar al dueño que alguien se une
+                    const sala = salas.get(salaId);
+                    const dueno = players.get(sala.duenoId);
+                    if (dueno && dueno.ws.readyState === 1) {
+                        dueno.ws.send(JSON.stringify({ type: 'player_join_request', id }));
+                    }
+                    // Unir al nuevo jugador
                     player.salaId = salaId;
                     player.mundo = mundo;
                     player.nombre = nombre;
-                    const sala = salas.get(salaId);
                     sala.posiciones.set(id, { x: player.x, y: player.y, z: player.z, yaw: player.yaw });
                     ws.send(JSON.stringify({ type: 'world_init', eventos: sala.eventos }));
+                    // Notificar a otros jugadores de la sala
                     players.forEach((p, otherId) => {
                         if (otherId !== id && p.salaId === salaId && p.ws.readyState === 1) {
                             p.ws.send(JSON.stringify({ type: 'player_joined', id }));
@@ -66,7 +99,7 @@ wss.on('connection', (ws) => {
                 }
             }
 
-            // Lista de salas
+            // Lista de salas (incluye mundos registrados)
             if (data.type === 'get_salas') {
                 const lista = [];
                 for (let [salaId, sala] of salas.entries()) {
@@ -76,7 +109,7 @@ wss.on('connection', (ws) => {
                     for (let p of players.values()) {
                         if (p.salaId === salaId && p.ws.readyState === 1) count++;
                     }
-                    lista.push({ salaId, mundo: dueno.mundo, nombre: dueno.nombre || dueno.mundo, jugadores: count });
+                    lista.push({ salaId, mundo: sala.mundo, nombre: sala.nombre, jugadores: count });
                 }
                 ws.send(JSON.stringify({ type: 'salas', salas: lista }));
             }
