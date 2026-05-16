@@ -92,6 +92,9 @@ wss.on('connection', (ws) => {
                 player.y = data.y;
                 player.z = data.z;
                 player.yaw = data.yaw;
+                player.pitch = data.pitch || 0;
+                player.moving = !!data.moving;
+                player.placing = !!data.placing;
                 if (data.mundo) player.mundo = data.mundo;
                 if (data.nombre) player.nombre = data.nombre;
                 if (player.salaId && salas.has(player.salaId)) {
