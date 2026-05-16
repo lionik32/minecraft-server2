@@ -94,7 +94,10 @@ wss.on('connection', (ws) => {
                 player.yaw = data.yaw;
                 player.pitch = data.pitch || 0;
                 player.moving = !!data.moving;
-                player.placing = !!data.placing;
+player.placing = !!data.placing;
+player.sneaking = !!data.sneaking;
+player.sneakOffset = data.sneakOffset || 0;
+player.sprinting = !!data.sprinting;
                 if (data.mundo) player.mundo = data.mundo;
                 if (data.nombre) player.nombre = data.nombre;
                 if (player.salaId && salas.has(player.salaId)) {
