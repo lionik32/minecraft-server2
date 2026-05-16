@@ -177,7 +177,7 @@ setInterval(() => {
         const lista = [];
         for (let [senderId, sender] of players.entries()) {
             if (senderId !== receiverId && sender.salaId === receiver.salaId && sender.ws.readyState === 1) {
-                lista.push({ id: senderId, x: sender.x, y: sender.y, z: sender.z, yaw: sender.yaw });
+                lista.push({ id: senderId, x: sender.x, y: sender.y, z: sender.z, yaw: sender.yaw, pitch: sender.pitch || 0, moving: sender.moving || false, placing: sender.placing || false });
             }
         }
         if (receiver.ws.readyState === 1) {
