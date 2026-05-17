@@ -34,6 +34,7 @@ wss.on('connection', (ws) => {
                     player.salaId = salaId;
                     player.mundo = mundo;
                     player.nombre = nombre;
+                    player.skin = data.skin || 'kevin.png';
                     player.esDueno = true;
                     console.log(`Mundo ${salaId} registrado por ${id} (${nombre})`);
                 }
@@ -73,6 +74,7 @@ wss.on('connection', (ws) => {
                     player.salaId = salaId;
                     player.mundo = mundo;
                     player.nombre = nombre;
+                    player.skin = data.skin || 'kevin.png';
                     sala.posiciones.set(id, { x: player.x, y: player.y, z: player.z, yaw: player.yaw });
                     ws.send(JSON.stringify({ type: 'world_init', eventos: sala.eventos }));
                     // Notificar a otros jugadores de la sala
