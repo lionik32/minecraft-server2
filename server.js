@@ -100,6 +100,7 @@ player.sneakOffset = data.sneakOffset || 0;
 player.sprinting = !!data.sprinting;
                 if (data.mundo) player.mundo = data.mundo;
                 if (data.nombre) player.nombre = data.nombre;
+                if (data.skin) player.skin = data.skin;
                 if (player.salaId && salas.has(player.salaId)) {
                     salas.get(player.salaId).posiciones.set(id, { x: player.x, y: player.y, z: player.z, yaw: player.yaw });
                 }
@@ -180,7 +181,7 @@ setInterval(() => {
         const lista = [];
         for (let [senderId, sender] of players.entries()) {
             if (senderId !== receiverId && sender.salaId === receiver.salaId && sender.ws.readyState === 1) {
-                lista.push({ id: senderId, x: sender.x, y: sender.y, z: sender.z, yaw: sender.yaw, pitch: sender.pitch || 0, moving: sender.moving || false, placing: sender.placing || false, sneaking: sender.sneaking || false, sneakOffset: sender.sneakOffset || 0, sprinting: sender.sprinting || false });
+                lista.push({ id: senderId, x: sender.x, y: sender.y, z: sender.z, yaw: sender.yaw, pitch: sender.pitch || 0, moving: sender.moving || false, placing: sender.placing || false, sneaking: sender.sneaking || false, sneakOffset: sender.sneakOffset || 0, sprinting: sender.sprinting || false, skin: sender.skin || 'kevin.png' });
             }
         }
         if (receiver.ws.readyState === 1) {
