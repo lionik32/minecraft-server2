@@ -128,12 +128,14 @@ player.sprinting = !!data.sprinting;
                 if (!player.salaId) return;
                 const sala = salas.get(player.salaId);
                 if (!sala) return;
-                const yaExiste = sala.eventos.some(e =>
-    e.type === data.type &&
-    Math.abs(e.x - data.x) < 0.1 &&
-    Math.abs(e.y - data.y) < 0.1 &&
-    Math.abs(e.z - data.z) < 0.1
-);
+                                const yaExiste = sala.eventos.some(e =>
+                    e.type === data.type &&
+                    Math.abs(e.x - data.x) < 0.1 &&
+                    Math.abs(e.y - data.y) < 0.1 &&
+                    Math.abs(e.z - data.z) < 0.1 &&
+                    (data.mat !== 'water' || e.nivel === data.nivel)
+                );
+
 if (!yaExiste) sala.eventos.push(data);
 players.forEach((p, otherId) => {
     if (otherId !== id && p.salaId === player.salaId && p.ws.readyState === 1) {
